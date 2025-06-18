@@ -81,6 +81,11 @@ if __name__ == "__main__":
         search_patient_by_document(identifier)
 ```
 Una vez que ejecutamos el workflow podemos ver que dice recurso creado exitosamente
+![ ](ejb.png)
+En la terminal dice el ID que es 47904001 asociado a la paciente Imas Navarro, Justina, si vamos a hapi fihr y lo cargamos en read podemos ver que se creo con exito 
+![ ](ejb2.png)
+![ ](ejb3.png)
+Creamos otro paciente con Id 47904163 asociado al paciente Franzi, Lucas
 
 b)
 
