@@ -86,7 +86,7 @@ En la terminal dice el ID que es 47904001 asociado a la paciente Imas Navarro, J
 ![ ](ejb2.png)
 ![ ](ejb3.png)
 Creamos otro paciente con Id 47904163 asociado al paciente Franzi, Lucas
-
+![ ](ejb4.png)
 b)
 
 ```python
@@ -145,4 +145,63 @@ def search_patient_by_document(identifier_value):
     else:
         print(f"Error al buscar paciente: {response.status_code}")
 ```
+Si la llamamos desde workflow se ve en la terminal 
+![ ](ejb5.png)
+lo cual tiene sentido porque primero se ejecuta la creacion del paciente y luego busca por documento, como el codigo se habia ejecutado previamente, encuentra dos pacientes con el mismo documento, pero cabe destacar que cada vez que se ejecuta el codigo se le asigna un id distinto
 
+c) Specimen representa una muestra biológica obtenida de un paciente con fines diagnósticos o de investigación. En este caso, se creó una muestra de sangre (Blood) relacionada al recurso Patient previamente generado (ID: 47904206), cumpliendo así con el requisito de establecer al menos una relación entre recursos.
+
+ Primero buscamos la estructura de “specimen” en HL7-fihr
+
+![ ](ejb6.png)
+Esta es la estructura que deberia cumplir a grandes rasgos ya que no todo es requerido
+Generamos entonces un codigo para specimen
+```python
+from fhir.resources.specimen import Specimen
+from fhir.resources.reference import Reference
+from fhir.resources.identifier import Identifier
+from fhir.resources.codeableconcept import CodeableConcept
+from fhir.resources.coding import Coding
+from datetime import datetime
+
+def create_specimen_resource(patient_id=None):
+    specimen = Specimen()
+    # ID del paciente relacionado
+    if patient_id:
+        patient_ref = Reference()
+        patient_ref.reference = f"Patient/{patient_id}"
+        specimen.subject = patient_ref
+    # Tipo de muestra (sangre)
+    specimen.type = CodeableConcept(
+        coding=[Coding(system="http://terminology.hl7.org/CodeSystem/v2-0487", code="BLD", display="Blood")]
+    )
+    # Fecha de recolección
+    specimen.collection = {
+        "collectedDateTime": datetime.now().isoformat()
+    }
+    # Identificador único para la muestra
+    identifier = Identifier()
+    identifier.value = "SAMPLE-001"
+    specimen.identifier = [identifier]
+
+    return specimen
+```
+Buscamos el codigo de specimen de sangre en https://terminology.hl7.org/6.4.0/CodeSystem-v2-0487.html para saber que code tiene
+y un workflow que lo genere 
+```python
+from Scripts.specimen import create_specimen_resource
+from Scripts.base import send_resource_to_hapi_fhir, get_resource_from_hapi_fhir
+
+if __name__ == "__main__":
+    # Con el ID se relaciona al paciente
+    patient_id = "47904206"  
+
+    specimen = create_specimen_resource(patient_id)
+    specimen_id = send_resource_to_hapi_fhir(specimen, 'Specimen')
+
+    if specimen_id:
+        get_resource_from_hapi_fhir(specimen_id, 'Specimen')
+```
+Una vez ejecutado el workflow de specimen se genera el specimen asociado a un paciente por id
+En hapi fihr podemos hacer un read con el ID que obtuvimos y vemos que se creo correctamente
+![ ](ejb7.png)
